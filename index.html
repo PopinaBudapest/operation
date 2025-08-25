@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Operation Cost Planner</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Operation Cost Planner</h1>
+      <div class="toolbar">
+        <label for="month">Month</label>
+        <input type="month" id="month" />
+        <label for="currency">Currency</label>
+        <input type="text" id="currency" value="HUF" maxlength="5" />
+        <button id="exportBtn" class="btn secondary" title="Export JSON">Export</button>
+        <label class="btn" for="importFile" title="Import JSON">Import</label>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </header>
+
+    <!-- Palette + Calendar -->
+    <section class="calendar-wrap">
+      <div class="palette" id="palette">
+        <button id="addWorkerBtn" class="btn">+ Add worker</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <table class="cal" id="calendar"><!-- built by JS --></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-column: Employees (left), Settings/KPIs (right) -->
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-body">
+          <h2>Workers</h2>
+          <div id="employeeList" class="employee-list"></div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="card-body">
+          <h2>Settings & KPIs</h2>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label for="rent">Monthly rent</label>
+            <input type="number" id="rent" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label for="extras">Additional costs</label>
+            <input type="number" id="extras" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label for="elecOpRate">Operating electricity (kWh/h)</label>
+            <input type="number" id="elecOpRate" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label for="elecIdleRate">Standby electricity (kWh/h)</label>
+            <input type="number" id="elecIdleRate" min="0" step="0.01" placeholder="0" />
+          </div>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label for="elecPrice">Price / kWh</label>
+            <input type="number" id="elecPrice" min="0" step="0.0001" placeholder="0" />
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="label">Weekly open hours</div>
+              <div id="weeklyOpen" class="value">0 h</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Monthly open hours</div>
+              <div id="monthlyOpen" class="value">0 h</div>
+            </div>
+            <div class="kpi">
+              <div class="label">Cost per open hour (incl. salaries & electricity)</div>
+              <div id="costPerHour" class="value">—</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Summary card (separate) -->
+    <section class="card">
+      <div class="card-body">
+        <h2>Summary</h2>
+        <div id="summaryBox" class="summary-list"><!-- filled by JS --></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Worker Modal (Add/Edit) -->
+  <div class="modal" id="workerModal" aria-hidden="true">
+    <div class="panel">
+      <h2 id="modalTitle" style="margin:0 0 8px 0">Add worker</h2>
+      <div class="row"><label>Name</label><input type="text" id="wName" placeholder="Name" /></div>
+      <div class="row"><label>Hourly rate</label><input type="number" id="wRate" min="0" step="0.01" placeholder="0" /></div>
+      <div class="row"><label>Color</label><input type="color" id="wColor" value="#06b6d4" /></div>
+      <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:12px;">
+        <button class="btn secondary" id="cancelAdd">Cancel</button>
+        <button class="btn" id="confirmAdd">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UMD build so it works from file:// and GitHub Pages -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js"></script>
+</body>
+</html>
