@@ -50,7 +50,7 @@ let editingId = null;
 let activeWorker = null;
 
 let state = {
-  v: 5,
+  v: 6,
   month: "",
   currency: "HUF",
   rent: 0,
@@ -68,7 +68,7 @@ let suppressSave = false;
 let lastServerVersion = 0;
 
 // ---- LocalStorage fallback ----
-const LS_KEY = "operationCostPlanner_v5";
+const LS_KEY = "operationCostPlanner_v6";
 function persistLocal(){
   const json = JSON.stringify(state, (k,v)=> v instanceof Set ? Array.from(v) : v);
   try { localStorage.setItem(LS_KEY, json); } catch {}
@@ -260,8 +260,7 @@ function weekdayCounts(year,monthIndex){
 function computeStats(){
   let weeklyOpen=0; for (let di=0; di<7; di++) for (let hi=0; hi<HOURS.length; hi++) if (state.schedule[di][hi].size>0) weeklyOpen++;
   const [y,m] = state.month ? state.month.split("-").map(Number) : [NaN,NaN];
-  let monthlyOpen=0, counts=null; const perEmployeeHours={}; const dayOpenHours=new Array(7).fill(0);
-  let daysInMonth = 0;
+  let monthlyOpen=0, counts=null; const perEmployeeHours={}; const dayOpenHours=new Array(7).fill(0); let daysInMonth=0;
   if (isFinite(y) && isFinite(m)){
     counts = weekdayCounts(y, m-1);
     daysInMonth = counts.reduce((a,c)=>a+c,0);
@@ -297,29 +296,40 @@ function recalc(){
   // Standby hours = ALL closed hours (24h days minus open hours)
   const monthlyStandby = Math.max(0, (stats.daysInMonth||0) * 24 - stats.monthlyOpen);
 
-  // Salaries
+  // Salaries (monthly)
   let totalSalaries = 0; state.employees.forEach(e=>{ const hrs = stats.perEmployeeHours[e.id] || 0; totalSalaries += hrs * Number(e.rate || 0); });
 
-  // Electricity
+  // Electricity (monthly)
   const opKWh = state.elecOpRate * stats.monthlyOpen;
   const idleKWh = state.elecIdleRate * monthlyStandby;
   const totKWh = opKWh + idleKWh;
   const elecCost = totKWh * state.elecPrice;
 
-  // Totals & CPH
+  // Totals & CPH (monthly)
   const totalFixed = state.rent + state.extras;
   const totalMonthly = totalFixed + totalSalaries + elecCost;
   const cph = stats.monthlyOpen > 0 ? totalMonthly / stats.monthlyOpen : NaN;
   costPerHourEl.textContent = isFinite(cph) ? `${fmtMoney(cph)} ${state.currency} / h` : "—";
 
-  // Per-day break-even target
-  for (let di=0; di<7; di++){
-    const beDay = (stats.dayOpenHours[di]||0) * (isFinite(cph)?cph:0);
-    const beHour = isFinite(cph) ? cph : NaN;
-    const dayEl = document.getElementById(`be_day_${di}`);
-    const hourEl = document.getElementById(`be_hour_${di}`);
-    if (dayEl) dayEl.textContent = isFinite(beDay) ? `${fmtMoney(beDay)} ${state.currency}` : "—";
-    if (hourEl) hourEl.textContent = isFinite(beHour) ? `${fmtMoney(beHour)} ${state.currency} / h` : "— / h";
+  // Per-day break-even (all monthly costs must be covered only by open hours)
+  // If there are no open hours in the month, show dashes.
+  if (!(stats.monthlyOpen > 0)) {
+    for (let di = 0; di < 7; di++) {
+      const dayEl = document.getElementById(`be_day_${di}`);
+      const hourEl = document.getElementById(`be_hour_${di}`);
+      if (dayEl) dayEl.textContent = "—";
+      if (hourEl) hourEl.textContent = "— / h";
+    }
+  } else {
+    const cphAllIn = totalMonthly / stats.monthlyOpen; // includes fixed, salaries, op+standby electricity
+    for (let di = 0; di < 7; di++) {
+      const dayOpen = stats.dayOpenHours[di] || 0;
+      const dayCost = dayOpen * cphAllIn;
+      const dayEl = document.getElementById(`be_day_${di}`);
+      const hourEl = document.getElementById(`be_hour_${di}`);
+      if (dayEl) dayEl.textContent = `${fmtMoney(dayCost)} ${state.currency}`;
+      if (hourEl) hourEl.textContent = `${fmtMoney(cphAllIn)} ${state.currency} / h`;
+    }
   }
 
   // Employees
